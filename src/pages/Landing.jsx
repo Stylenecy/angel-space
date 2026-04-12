@@ -72,7 +72,7 @@ export default function Landing({ setPage }) {
     }, 1500);
   };
 
-  const displayName = username || 'Angel'
+  const displayName = username
   const hasUsername = !!username
   const targetPage = hasUsername ? 'dashboard' : 'login'
 
@@ -108,7 +108,7 @@ export default function Landing({ setPage }) {
             showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          Hi, {displayName}
+          {hasUsername ? `Hi, ${displayName}` : 'Hi'}
           <span className="inline-block ml-2 animate-pixel-blink">🌙</span>
         </h1>
 
