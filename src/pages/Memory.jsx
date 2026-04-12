@@ -4,15 +4,15 @@ import StarField from '../components/StarField';
 const cards = [
   {
     image: '/assets/images/20251225_185849.jpg',
-    caption: 'ini foto dari awal-awal kita. aku masih ingat betapa nervous-nya aku waktu itu.',
+    caption: 'inget banget waktu kita foto bareng ini. deg-degan dikit.',
   },
   {
     image: '/assets/images/20260109_193257 (2).jpg',
-    caption: 'natal pertama kita. salah satu hari yang paling aku syukuri.',
+    caption: 'awal tahun yang bikin hati adem.',
   },
   {
     image: '/assets/images/20260221_203642 (1).jpg',
-    caption: 'ini. ini salah satu kenangan favorit aku sama kamu.',
+    caption: 'ini. kenangan favorit aku sama kamu.',
   },
   {
     image: '/assets/images/20260310_204840.jpg',
