@@ -1,58 +1,38 @@
 import { useState, useEffect, createContext, useContext } from 'react'
-import { supabase } from '../lib/supabaseClient'
+
+const STORAGE_KEY = 'angel_space_username'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
+  const [username, _setUsername] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
-    })
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else { setProfile(null); setLoading(false) }
-    })
-
-    return () => subscription.unsubscribe()
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      _setUsername(stored.trim())
+    }
+    setLoading(false)
   }, [])
 
-  const fetchProfile = async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data ?? null)
-    setLoading(false)
+  const setUsername = (name) => {
+    const trimmed = (name || '').trim()
+    if (trimmed) {
+      localStorage.setItem(STORAGE_KEY, trimmed)
+      _setUsername(trimmed)
+    }
   }
 
-  const signIn = async (email) => {
-    const redirectTo = `${window.location.origin}/?page=dashboard`
-    console.log('[Auth] Sign in:', email, '→ redirect:', redirectTo)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirectTo }
-    })
-    if (error) console.error('[Auth] Error:', error.message, error)
-    return { error }
+  const signOut = () => {
+    localStorage.removeItem(STORAGE_KEY)
+    _setUsername(null)
   }
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+  const profile = username ? { display_name: username, username } : null
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ username, profile, loading, setUsername, signOut }}>
       {children}
     </AuthContext.Provider>
   )

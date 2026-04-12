@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
-import ProtectedRoute from './components/ProtectedRoute'
 
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -28,10 +27,8 @@ function AppInner() {
     setIsPlaying(!isPlaying)
   }
 
-  // Pages yang tidak perlu musik button (full-screen experiences)
   const hideMusicBtn = page === 'landing' || page === 'hidden' || page === 'login'
 
-  // Auth loading screen
   if (authLoading) {
     return (
       <div className="min-h-screen w-full bg-midnight font-sans flex items-center justify-center">
@@ -58,12 +55,10 @@ function AppInner() {
         </button>
       )}
 
-      {/* ── Public pages ── */}
       {page === 'landing'  && <Landing setPage={setPage} />}
       {page === 'hidden'   && <HiddenMessage setPage={setPage} />}
       {page === 'login'    && <Login setPage={setPage} />}
-
-      {/* ── Mood / guest pages (no auth required for Phase 0) ── */}
+      {page === 'dashboard'&& <Dashboard setPage={setPage} />}
       {page === 'menu'         && <Menu setPage={setPage} />}
       {page === 'capek'        && <Capek setPage={setPage} />}
       {page === 'overthinking' && <Overthinking setPage={setPage} />}
@@ -73,13 +68,6 @@ function AppInner() {
       {page === 'portfolio'    && <Portfolio setPage={setPage} />}
       {page === 'feed'         && <Feed setPage={setPage} />}
       {page === 'world'        && <World setPage={setPage} />}
-
-      {/* ── Protected pages (require login) ── */}
-      {page === 'dashboard' && (
-        <ProtectedRoute fallback={<Login setPage={setPage} />}>
-          <Dashboard setPage={setPage} />
-        </ProtectedRoute>
-      )}
     </div>
   )
 }

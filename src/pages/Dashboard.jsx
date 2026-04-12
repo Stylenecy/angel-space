@@ -119,8 +119,8 @@ export default function Dashboard({ setPage }) {
     else setPage(id)
   }
 
-  const handleSignOut = async () => {
-    await signOut()
+  const handleSignOut = () => {
+    signOut()
     setPage('landing')
   }
 
@@ -156,7 +156,7 @@ export default function Dashboard({ setPage }) {
             onClick={handleSignOut}
             className="font-pixel text-[0.45rem] text-soft-white/25 hover:text-pixel-pink transition-colors tracking-widest cursor-pointer"
           >
-            keluar
+            ganti nama
           </button>
         </div>
 
