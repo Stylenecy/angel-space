@@ -1,0 +1,16 @@
+node_modules
+.git
+dist/
+.vercel/
+.agent/
+Dokumen/
+Bahan_Foto/
+Bahan_Icon/
+.claude/
+.qwen/
+*.mp4
+*.heic
+*.zip
+*.tar
+*.log
+*.local
