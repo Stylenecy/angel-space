@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 
 import Landing from './pages/Landing'
@@ -19,12 +19,30 @@ function AppInner() {
   const { loading: authLoading } = useAuth()
   const [page, setPage] = useState('landing')
   const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef(null)
 
   const toggleMusic = () => {
-    const audio = document.getElementById('bg-music')
-    if (isPlaying) audio.pause()
-    else audio.play().catch(() => {})
-    setIsPlaying(!isPlaying)
+    const audio = audioRef.current
+    if (!audio) return
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    } else {
+      audio.volume = 0
+      audio.play().catch(() => {})
+      setIsPlaying(true)
+      // 3s fade-in
+      let vol = 0
+      const step = 50
+      const fade = setInterval(() => {
+        vol += step / 3000
+        if (vol >= 1) {
+          vol = 1
+          clearInterval(fade)
+        }
+        audio.volume = vol
+      }, step)
+    }
   }
 
   const hideMusicBtn = page === 'landing' || page === 'hidden' || page === 'login'
@@ -41,7 +59,7 @@ function AppInner() {
 
   return (
     <div className="min-h-screen w-full bg-midnight font-sans overflow-x-hidden selection:bg-calm-blue/30 selection:text-soft-white relative">
-      <audio id="bg-music" loop preload="auto">
+      <audio ref={audioRef} loop preload="auto">
         <source src="/assets/music/background-music.mp3" type="audio/mpeg" />
       </audio>
 
