@@ -46,7 +46,7 @@ export default function Feed({ setPage }) {
       <div className="relative z-10 w-full max-w-md">
         {/* Title */}
         <h2
-          className="font-pixel text-xs md:text-sm text-warm-gold mb-6 text-center"
+          className="font-pixel text-xs md:text-sm text-warm-gold mb-2 text-center"
           style={{
             opacity: titleOp,
             transform: titleOp ? 'translateY(0)' : 'translateY(-10px)',
@@ -55,6 +55,15 @@ export default function Feed({ setPage }) {
         >
           📝 Feed Kita
         </h2>
+        <p
+          className="font-pixel text-[0.4rem] text-soft-white/25 text-center mb-6 tracking-widest"
+          style={{
+            opacity: titleOp,
+            transition: 'opacity 0.4s ease-out 0.2s',
+          }}
+        >
+          [ sedang dibangun — tanpa gambar & like dulu ]
+        </p>
 
         {/* Toolbar */}
         <div
