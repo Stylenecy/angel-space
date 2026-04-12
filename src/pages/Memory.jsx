@@ -3,19 +3,19 @@ import StarField from '../components/StarField';
 
 const cards = [
   {
-    image: '/assets/images/20250625_174823.jpg',
+    image: '/assets/images/20251225_185849.jpg',
     caption: 'ini foto dari awal-awal kita. aku masih ingat betapa nervous-nya aku waktu itu.',
   },
   {
-    image: '/assets/images/IMG-20251225-WA0104.jpg',
+    image: '/assets/images/20260109_193257 (2).jpg',
     caption: 'natal pertama kita. salah satu hari yang paling aku syukuri.',
   },
   {
-    image: '/assets/images/20260221_120152.jpg',
+    image: '/assets/images/20260221_203642 (1).jpg',
     caption: 'ini. ini salah satu kenangan favorit aku sama kamu.',
   },
   {
-    image: '/assets/images/20260319_175625.jpg',
+    image: '/assets/images/20260310_204840.jpg',
     caption: 'baru kemarin rasanya, tapi udah jadi memori yang paling aku jaga.',
   },
   {
