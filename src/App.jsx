@@ -124,8 +124,9 @@ function AppInner() {
           </button>
 
           {showControls && (
-            <div className="fixed top-4 left-4 z-50 bg-deep-blue/90 border-2 border-warm-gold/30 p-4 min-w-[240px] shadow-[3px_3px_0_0_#d4a853]">
-              <p className="font-pixel text-[0.5rem] text-warm-gold mb-2">🎵 Pope Is A Rockstar</p>
+            <div className="fixed top-16 right-4 z-50 bg-deep-blue/90 border-2 border-warm-gold/30 p-3 min-w-[180px] shadow-[3px_3px_0_0_#d4a853]">
+              <p className="font-pixel text-[0.45rem] text-warm-gold mb-1">♫ Pope Is A Rockstar</p>
+              <p className="font-pixel text-[0.35rem] text-soft-white/40 mb-2">playing... <span className="animate-pixel-blink">♪</span></p>
 
               {/* Progress bar */}
               <div
