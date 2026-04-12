@@ -1,0 +1,51 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables — JANGAN PERNAH COMMIT INI
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AI editor local settings (jangan commit ke shared repo)
+.claude/
+.qwen/
+
+# Large files & archives yang tidak perlu di-track
+*.tar
+*.zip
+ai_studio_code.html
+
+# Embedded git repos di .agent/Idea
+.agent/Idea/z-portfolio-idea/
+
+# Bahan foto & icon (besar, personal — di-manage terpisah)
+Bahan_Foto/
+Bahan_Icon/
+
+# Large video files (>50MB)
+public/assets/videos/*.mp4
+
+.vercel
