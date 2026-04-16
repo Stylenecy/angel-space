@@ -14,6 +14,8 @@ import Portfolio from './pages/Portfolio'
 import HiddenMessage from './pages/HiddenMessage'
 import Feed from './pages/Feed'
 import World from './pages/World'
+import PixelDesktop from './pages/PixelDesktop'
+import PixelTrailCursor from './components/PixelTrailCursor'
 
 function AppInner() {
   const { loading: authLoading } = useAuth()
@@ -173,6 +175,7 @@ function AppInner() {
 
   return (
     <div className="min-h-screen w-full bg-midnight font-sans overflow-x-hidden selection:bg-calm-blue/30 selection:text-soft-white relative">
+      <PixelTrailCursor />
       <audio ref={audioRef} loop preload="auto">
         <source src="/assets/music/background-music.mp3" type="audio/mpeg" />
       </audio>
@@ -260,6 +263,7 @@ function AppInner() {
       {page === 'hidden'   && <HiddenMessage setPage={setPage} />}
       {page === 'login'    && <Login setPage={setPage} />}
       {page === 'dashboard'&& <Dashboard setPage={setPage} />}
+      {page === 'desktop'  && <PixelDesktop setPage={setPage} />}
       {page === 'menu'         && <Menu setPage={setPage} />}
       {page === 'capek'        && <Capek setPage={setPage} />}
       {page === 'overthinking' && <Overthinking setPage={setPage} />}

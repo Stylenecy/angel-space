@@ -214,6 +214,15 @@ export default function Dashboard({ setPage }) {
         >
           🎁 surprise me
         </button>
+
+        {/* ── Desktop Mode (DaveOS-inspired) ── */}
+        <button
+          onClick={() => setPage('desktop')}
+          className={`mt-3 font-pixel text-[0.45rem] tracking-widest text-soft-white/25 hover:text-calm-blue transition-colors cursor-pointer ${visible ? 'opacity-100' : 'opacity-0'}`}
+          style={{ transitionDelay: '1100ms' }}
+        >
+          ✦ desktop mode
+        </button>
       </div>
 
       {/* Surprise Wheel Overlay */}

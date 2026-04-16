@@ -1,24 +1,32 @@
 /**
  * Entrance picker — random entrance type with no consecutive repeats.
- * Also includes 10% chance of secret heart entrance.
+ * First visit per session → cinematic boot intro.
+ * 10% chance of secret heart on subsequent visits.
  */
 
 const ENTRANCE_TYPES = ['starfall', 'portal', 'typewriter', 'moodmatch']
-const SECRET_CHANCE = 0.1 // 10%
+const SECRET_CHANCE   = 0.1   // 10%
+const CINEMATIC_KEY   = 'as_cinematic_done'
 
 let lastType = null
 
 /**
  * Pick a random entrance type.
- * Never returns the same type twice in a row.
- * 10% chance of returning 'secretheart' instead.
+ * - First visit this browser session → 'cinematic' boot sequence.
+ * - Subsequent visits: 10% secret heart, otherwise random (no repeats).
  */
 export function pickEntrance() {
+  // First visit this session → cinematic intro
+  if (!sessionStorage.getItem(CINEMATIC_KEY)) {
+    sessionStorage.setItem(CINEMATIC_KEY, '1')
+    console.log('🎬 Entrance picked: cinematic (first visit)')
+    return 'cinematic'
+  }
+
   // 10% chance for secret heart
   if (Math.random() < SECRET_CHANCE) {
-    const type = 'secretheart'
-    console.log(`🎭 Entrance picked: ${type} (secret heart!)`)
-    return type
+    console.log('🎭 Entrance picked: secretheart')
+    return 'secretheart'
   }
 
   let type

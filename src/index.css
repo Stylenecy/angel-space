@@ -19,6 +19,40 @@
    ANIMATIONS
    ═══════════════════════════════════════ */
 
+/* Elsye-inspired: single char slides up from clip mask */
+@keyframes char-slide {
+  from {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0%);
+    opacity: 1;
+  }
+}
+
+.animate-char-slide {
+  opacity: 0;
+  animation: char-slide 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Elsye-inspired: word fades in with slight Y + 3-D tilt */
+@keyframes word-slide {
+  from {
+    transform: translateY(18px) rotateX(-40deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-word-slide {
+  opacity: 0;
+  animation: word-slide 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

@@ -8,18 +8,76 @@ import {
   TypewriterEntrance,
   MoodMatchEntrance,
   SecretHeartEntrance,
+  CinematicEntrance,
 } from '../components/entrances';
 
 const ENTRANCE_COMPONENTS = {
-  starfall: StarfallEntrance,
-  portal: PortalEntrance,
-  typewriter: TypewriterEntrance,
-  moodmatch: MoodMatchEntrance,
+  starfall:    StarfallEntrance,
+  portal:      PortalEntrance,
+  typewriter:  TypewriterEntrance,
+  moodmatch:   MoodMatchEntrance,
   secretheart: SecretHeartEntrance,
+  cinematic:   CinematicEntrance,
 };
 
+// ── Character-stagger text (Elsye-inspired) ──────────────────
+// Each character slides up from behind a clipping mask, staggered.
+function CharStagger({ text, baseDelay = 0, charDelay = 70, className = '' }) {
+  return (
+    <>
+      {text.split('').map((char, i) => (
+        <span
+          key={i}
+          style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}
+        >
+          <span
+            className={`inline-block animate-char-slide ${className}`}
+            style={{
+              animationDelay: `${baseDelay + i * charDelay}ms`,
+              animationFillMode: 'both',
+            }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+// ── Word-stagger subtitle (Elsye words fade in with Y + 3-D tilt) ──
+const SUBTITLE_LINES = [
+  'ini bukan apa-apa yang besar…',
+  'cuma tempat kecil,',
+  'kalau suatu hari kamu butuh pulang sebentar',
+];
+
+function SubtitleStagger() {
+  return (
+    <p className="mt-6 text-lg md:text-xl leading-relaxed text-soft-white/70">
+      {SUBTITLE_LINES.map((line, lineIdx) => (
+        <span key={lineIdx} className="block" style={{ perspective: '600px' }}>
+          {line.split(' ').map((word, wordIdx) => (
+            <span
+              key={wordIdx}
+              className="inline-block mr-[0.28em] animate-word-slide"
+              style={{
+                animationDelay: `${lineIdx * 180 + wordIdx * 75}ms`,
+                animationFillMode: 'both',
+              }}
+            >
+              {word}
+            </span>
+          ))}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+// ── Page component ───────────────────────────────────────────
 export default function Landing({ setPage }) {
-  const { username } = useAuth()
+  const { username } = useAuth();
   const [entranceType, setEntranceType] = useState(null);
   const [entranceDone, setEntranceDone] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
@@ -32,6 +90,7 @@ export default function Landing({ setPage }) {
     setEntranceType(pickEntrance());
   }, []);
 
+  // Emergency fallback — show everything at 6 s no matter what
   useEffect(() => {
     const emergencyShow = setTimeout(() => {
       setEntranceDone(true);
@@ -50,6 +109,7 @@ export default function Landing({ setPage }) {
     return () => { clearTimeout(t2); clearTimeout(t3); };
   };
 
+  // Fallback for when entranceType resolves to null (shouldn't happen normally)
   useEffect(() => {
     if (entranceType === null) {
       const t1 = setTimeout(() => setShowTitle(true), 300);
@@ -72,9 +132,9 @@ export default function Landing({ setPage }) {
     }, 1500);
   };
 
-  const displayName = username
-  const hasUsername = !!username
-  const targetPage = hasUsername ? 'dashboard' : 'login'
+  const displayName  = username;
+  const hasUsername  = !!username;
+  const targetPage   = hasUsername ? 'dashboard' : 'login';
 
   const EntranceComponent = entranceType ? ENTRANCE_COMPONENTS[entranceType] : null;
 
@@ -82,16 +142,28 @@ export default function Landing({ setPage }) {
     <section className="relative flex flex-col items-center justify-center min-h-screen text-center px-6 overflow-hidden select-none">
       <StarField />
 
+      {/* CRT scanline overlay — subtle atmospheric texture */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          background:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px)',
+        }}
+      />
+
       {!entranceDone && EntranceComponent && (
         <EntranceComponent onComplete={handleEntranceComplete} />
       )}
 
       <div className="relative z-10 flex flex-col items-center max-w-lg">
 
-        <div className="mb-6">
-          <div
-            className="w-16 h-16 bg-deep-blue border-3 border-soft-white/20 flex items-center justify-center animate-float pixel-render"
-          >
+        {/* Avatar icon */}
+        <div
+          className={`mb-6 transition-all duration-700 ease-out ${
+            showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
+          }`}
+        >
+          <div className="w-16 h-16 bg-deep-blue border-3 border-soft-white/20 flex items-center justify-center animate-float pixel-render">
             <img
               src="/assets/icons/anjing-tidur.png"
               alt="anjing mini tidur"
@@ -102,26 +174,33 @@ export default function Landing({ setPage }) {
           </div>
         </div>
 
-        <h1
-          onClick={handleTitleClick}
-          className={`font-pixel text-xl md:text-2xl tracking-wide text-warm-gold transition-all duration-1000 ease-out cursor-pointer select-none ${
-            showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-        >
-          {hasUsername ? `Hi, ${displayName}` : 'Hi'}
-          <span className="inline-block ml-2 animate-pixel-blink">🌙</span>
-        </h1>
+        {/* ── Title — character stagger (Elsye) ── */}
+        {showTitle && (
+          <h1
+            onClick={handleTitleClick}
+            className="font-pixel text-xl md:text-2xl tracking-wide text-warm-gold cursor-pointer select-none"
+          >
+            {hasUsername ? (
+              <>
+                <CharStagger text="Hi,\u00A0" baseDelay={0} charDelay={70} />
+                <CharStagger text={displayName} baseDelay={350} charDelay={90} />
+              </>
+            ) : (
+              <CharStagger text="Hi" baseDelay={0} charDelay={120} />
+            )}
+            <span
+              className="inline-block ml-2 animate-pixel-blink"
+              style={{ animationDelay: '900ms' }}
+            >
+              🌙
+            </span>
+          </h1>
+        )}
 
-        <p
-          className={`mt-6 text-lg md:text-xl leading-relaxed text-soft-white/70 transition-all duration-1000 ease-out ${
-            showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-        >
-          ini bukan apa-apa yang besar…<br />
-          cuma tempat kecil,<br />
-          kalau suatu hari kamu butuh pulang sebentar
-        </p>
+        {/* ── Subtitle — word stagger (Elsye) ── */}
+        {showSubtitle && <SubtitleStagger />}
 
+        {/* ── Enter button ── */}
         <div
           className={`mt-12 transition-all duration-700 ease-out ${
             showButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
@@ -132,6 +211,7 @@ export default function Landing({ setPage }) {
           </button>
         </div>
 
+        {/* ── Bottom hint row ── */}
         <div
           className={`mt-8 flex flex-col items-center gap-4 transition-all duration-1000 ease-out ${
             showButton ? 'opacity-100' : 'opacity-0'
