@@ -1,31 +1,35 @@
 /**
  * Entrance picker — random entrance type with no consecutive repeats.
- * First visit per session → cinematic boot intro.
- * 10% chance of secret heart on subsequent visits.
+ * - Cinematic boot intro shows once per 24 hours (localStorage).
+ * - 10% chance of secret heart on other visits.
  */
 
-const ENTRANCE_TYPES = ['starfall', 'portal', 'typewriter', 'moodmatch']
-const SECRET_CHANCE   = 0.1   // 10%
-const CINEMATIC_KEY   = 'as_cinematic_done'
+const ENTRANCE_TYPES   = ['starfall', 'portal', 'typewriter', 'moodmatch']
+const SECRET_CHANCE    = 0.1
+const CINEMATIC_KEY    = 'as_cinematic_ts'
+const CINEMATIC_COOLDOWN = 24 * 60 * 60 * 1000  // 24 jam
 
 let lastType = null
 
 /**
  * Pick a random entrance type.
- * - First visit this browser session → 'cinematic' boot sequence.
- * - Subsequent visits: 10% secret heart, otherwise random (no repeats).
+ * - Once per 24h → 'cinematic' boot sequence (uses localStorage timestamp).
+ * - Otherwise: 10% secretheart, else random no-repeat.
  */
 export function pickEntrance() {
-  // First visit this session → cinematic intro
-  if (!sessionStorage.getItem(CINEMATIC_KEY)) {
-    sessionStorage.setItem(CINEMATIC_KEY, '1')
-    console.log('🎬 Entrance picked: cinematic (first visit)')
-    return 'cinematic'
+  try {
+    const last = parseInt(localStorage.getItem(CINEMATIC_KEY) || '0', 10)
+    if (Date.now() - last > CINEMATIC_COOLDOWN) {
+      localStorage.setItem(CINEMATIC_KEY, String(Date.now()))
+      console.log('🎬 Entrance: cinematic (24h cooldown reset)')
+      return 'cinematic'
+    }
+  } catch (_) {
+    // localStorage unavailable — skip cinematic
   }
 
-  // 10% chance for secret heart
   if (Math.random() < SECRET_CHANCE) {
-    console.log('🎭 Entrance picked: secretheart')
+    console.log('🎭 Entrance: secretheart')
     return 'secretheart'
   }
 
@@ -35,7 +39,7 @@ export function pickEntrance() {
   } while (type === lastType)
 
   lastType = type
-  console.log(`🎭 Entrance picked: ${type}`)
+  console.log(`🎭 Entrance: ${type}`)
   return type
 }
 

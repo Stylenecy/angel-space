@@ -18,6 +18,7 @@ Bukan produk komersial. Ini ruang digital yang dibuat dengan cinta — harus ter
 
 ### 1. Selalu Baca Dulu Sebelum Mulai
 Sebelum mengerjakan apapun, baca:
+- **`.agent/Protocol.md`** → WAJIB PERTAMA. Berisi rules, apa yang berhasil, apa yang gagal, dan tips penting
 - `.agent/Master/MASTER_TASK.md` → cek task apa yang harus dikerjakan selanjutnya
 - `.agent/Master/Angel's Space Masterplan v2.md` → single source of truth
 

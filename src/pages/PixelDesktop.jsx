@@ -27,34 +27,43 @@ function TaskbarClock() {
 }
 
 // ── Floating draggable window ──────────────────────────────
+// Uses position:fixed + framer-motion drag (transforms over left/top).
+// No pointer-events wrappers needed.
 function AppWindow({ app, onClose, onNavigate }) {
+  const initX = typeof window !== 'undefined'
+    ? Math.max(8, window.innerWidth / 2 - 150)
+    : 60
+  const initY = typeof window !== 'undefined'
+    ? Math.max(60, window.innerHeight * 0.18)
+    : 120
+
   return (
     <motion.div
       drag
       dragMomentum={false}
-      initial={{ opacity: 0, scale: 0.85, y: 16 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.85, y: 16 }}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className="absolute select-none"
       style={{
-        top: '20%',
-        left: '50%',
-        translateX: '-50%',
+        position: 'fixed',
+        left: initX,
+        top: initY,
         width: 300,
         zIndex: 200,
         touchAction: 'none',
+        cursor: 'grab',
       }}
       whileDrag={{ cursor: 'grabbing', scale: 1.02 }}
     >
-      {/* Title bar */}
+      {/* Title bar — drag handle */}
       <div
-        className="flex items-center justify-between px-3 py-2 cursor-grab"
         style={{
           background: app.color + '25',
           border: `3px solid ${app.color}`,
           borderBottom: 'none',
         }}
+        className="flex items-center justify-between px-3 py-2"
       >
         <div className="flex items-center gap-2">
           <span className="text-base">{app.emoji}</span>
@@ -62,6 +71,7 @@ function AppWindow({ app, onClose, onNavigate }) {
             {app.label}.exe
           </span>
         </div>
+        {/* Stop propagation so close button doesn't start a drag */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={onClose}
@@ -78,21 +88,23 @@ function AppWindow({ app, onClose, onNavigate }) {
 
       {/* Window body */}
       <div
-        className="flex flex-col items-center gap-4 p-6"
         style={{
           background: '#111b3d',
           border: `3px solid ${app.color}`,
           borderTop: 'none',
-          boxShadow: `0 8px 24px ${app.color}30`,
+          boxShadow: `0 8px 32px ${app.color}35`,
         }}
+        className="flex flex-col items-center gap-4 p-6"
       >
         <span className="text-4xl mt-1">{app.emoji}</span>
         <p className="font-pixel text-[0.45rem] text-soft-white/55 text-center leading-relaxed">
           {app.desc}
         </p>
+        {/* Stop propagation so BUKA button doesn't drag the window */}
         <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={() => onNavigate(app.id)}
-          className="mt-1 pixel-btn !text-[0.48rem] !py-2 !px-5"
+          className="mt-1 pixel-btn !text-[0.48rem] !py-2 !px-5 cursor-pointer"
           style={{ borderColor: app.color, color: app.color }}
         >
           BUKA →
@@ -112,16 +124,18 @@ function DesktopIcon({ app, active, onClick }) {
       <div
         className="w-14 h-14 flex items-center justify-center border-2 transition-all duration-150"
         style={{
-          background: active ? app.color + '25' : app.color + '10',
-          borderColor: active ? app.color : app.color + '50',
-          boxShadow: active ? `0 0 12px ${app.color}50, inset 0 0 6px ${app.color}20` : 'none',
+          background: active ? app.color + '28' : app.color + '0f',
+          borderColor: active ? app.color : app.color + '55',
+          boxShadow: active
+            ? `0 0 14px ${app.color}55, inset 0 0 6px ${app.color}20`
+            : 'none',
         }}
       >
         <span className="text-2xl">{app.emoji}</span>
       </div>
       <span
         className="font-pixel text-[0.38rem] text-center leading-tight max-w-[3.5rem]"
-        style={{ color: active ? app.color : 'rgba(240,240,245,0.55)' }}
+        style={{ color: active ? app.color : 'rgba(240,240,245,0.5)' }}
       >
         {app.label}
       </span>
@@ -133,21 +147,20 @@ function DesktopIcon({ app, active, onClick }) {
 export default function PixelDesktop({ setPage }) {
   const [activeApp, setActiveApp] = useState(null)
   const [booted, setBooted] = useState(false)
-  const [isMobile] = useState(() => window.matchMedia('(pointer: coarse)').matches)
 
   useEffect(() => {
     const t = setTimeout(() => setBooted(true), 200)
     return () => clearTimeout(t)
   }, [])
 
-  const openApp = (app) => setActiveApp(prev => prev?.id === app.id ? null : app)
+  const openApp  = (app) => setActiveApp(prev => prev?.id === app.id ? null : app)
   const closeApp = () => setActiveApp(null)
   const navigate = (id) => { setActiveApp(null); setPage(id) }
 
-  const now = new Date()
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const now      = new Date()
+  const dayNames   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  const dateStr = `${dayNames[now.getDay()]} ${now.getDate()} ${monthNames[now.getMonth()]}`
+  const dateStr  = `${dayNames[now.getDay()]} ${now.getDate()} ${monthNames[now.getMonth()]}`
 
   return (
     <section
@@ -172,104 +185,89 @@ export default function PixelDesktop({ setPage }) {
       >
         <div className="flex items-center gap-5">
           <span className="font-pixel text-[0.5rem] text-warm-gold">✦ ANGEL'S SPACE</span>
-          <span className="font-pixel text-[0.4rem] text-soft-white/25 hidden md:block">v1.0</span>
+          <span className="font-pixel text-[0.4rem] text-soft-white/20 hidden md:block">v1.0</span>
         </div>
-        <div className="flex items-center gap-3">
-          <TaskbarClock />
-        </div>
+        <TaskbarClock />
       </div>
 
       {/* ── Desktop icons area ── */}
       <div className="relative z-20 p-5 md:p-8">
-        <div
-          className={`flex flex-wrap gap-5 max-w-sm transition-all duration-700 ease-out ${
-            booted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
+        <div className="flex flex-wrap gap-5 max-w-sm">
           {APPS.map((app, i) => (
-            <div
+            <motion.div
               key={app.id}
-              style={{ transitionDelay: `${i * 70}ms` }}
-              className={`transition-all duration-500 ${booted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={booted ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+              transition={{ delay: i * 0.07, duration: 0.4, ease: 'easeOut' }}
             >
               <DesktopIcon
                 app={app}
                 active={activeApp?.id === app.id}
                 onClick={() => openApp(app)}
               />
-            </div>
+            </motion.div>
           ))}
         </div>
 
-        {/* Hint text */}
-        <p
-          className={`mt-6 font-pixel text-[0.42rem] text-soft-white/20 tracking-wider transition-all duration-1000 ${
-            booted ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ transitionDelay: '700ms' }}
+        <motion.p
+          className="mt-6 font-pixel text-[0.42rem] text-soft-white/18 tracking-wider"
+          initial={{ opacity: 0 }}
+          animate={booted ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.7 }}
         >
-          {isMobile ? 'tap icon untuk membuka' : 'double-click icon untuk membuka • drag window untuk memindah'}
-        </p>
+          tap icon untuk membuka • drag window untuk memindah
+        </motion.p>
       </div>
 
-      {/* ── App windows ── */}
-      <div className="absolute inset-0 z-30 pointer-events-none">
-        <div className="relative w-full h-full pointer-events-auto">
-          <AnimatePresence>
-            {activeApp && (
-              <AppWindow
-                key={activeApp.id}
-                app={activeApp}
-                onClose={closeApp}
-                onNavigate={navigate}
-              />
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {/* ── Floating windows — position:fixed, no wrapper needed ── */}
+      <AnimatePresence>
+        {activeApp && (
+          <AppWindow
+            key={activeApp.id}
+            app={activeApp}
+            onClose={closeApp}
+            onNavigate={navigate}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Taskbar ── */}
       <div
         className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between px-3"
         style={{
           height: 44,
-          background: 'rgba(10,14,39,0.92)',
+          background: 'rgba(10,14,39,0.93)',
           backdropFilter: 'blur(10px)',
           borderTop: '2px solid rgba(240,240,245,0.08)',
         }}
       >
-        {/* Start / Menu button */}
         <button
           onClick={() => setPage('dashboard')}
-          className="pixel-btn !text-[0.4rem] !py-1 !px-3 !border-warm-gold/40 text-warm-gold hover:!border-warm-gold"
+          className="pixel-btn !text-[0.4rem] !py-1 !px-3 !border-warm-gold/40 text-warm-gold hover:!border-warm-gold cursor-pointer"
         >
           ✦ MENU
         </button>
 
-        {/* Active window indicator */}
-        <div className="flex items-center gap-2">
-          <AnimatePresence>
-            {activeApp && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.15 }}
-                className="px-3 py-1 font-pixel text-[0.4rem] border cursor-pointer"
-                style={{
-                  background: activeApp.color + '18',
-                  borderColor: activeApp.color + '55',
-                  color: activeApp.color,
-                }}
-                onClick={closeApp}
-              >
-                {activeApp.emoji} {activeApp.label}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <AnimatePresence>
+          {activeApp && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="px-3 py-1 font-pixel text-[0.4rem] border cursor-pointer"
+              style={{
+                background: activeApp.color + '18',
+                borderColor: activeApp.color + '55',
+                color: activeApp.color,
+              }}
+              onClick={closeApp}
+            >
+              {activeApp.emoji} {activeApp.label}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Date + exit */}
         <div className="flex items-center gap-3">
           <span className="font-pixel text-[0.38rem] text-soft-white/25 hidden md:block">{dateStr}</span>
           <button
