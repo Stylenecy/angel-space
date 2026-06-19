@@ -14,6 +14,7 @@ import Portfolio from './pages/Portfolio'
 import HiddenMessage from './pages/HiddenMessage'
 import Feed from './pages/Feed'
 import World from './pages/World'
+import BibleWalk from './pages/BibleWalk'
 import PixelDesktop from './pages/PixelDesktop'
 import PixelTrailCursor from './components/PixelTrailCursor'
 
@@ -273,6 +274,7 @@ function AppInner() {
       {page === 'portfolio'    && <Portfolio setPage={setPage} />}
       {page === 'feed'         && <Feed setPage={setPage} />}
       {page === 'world'        && <World setPage={setPage} />}
+      {page === 'bible'        && <BibleWalk setPage={setPage} />}
     </div>
   )
 }

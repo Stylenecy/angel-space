@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import StarField from '../components/StarField';
+import PinGate from '../components/PinGate';
 import { useAuth } from '../hooks/useAuth';
 import { pickEntrance } from '../components/entrances/entrancePicker';
 import {
@@ -91,8 +92,7 @@ export default function Landing({ setPage }) {
   const [showTitle, setShowTitle] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
   const [showButton, setShowButton] = useState(false);
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef(null);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
     setEntranceType(pickEntrance());
@@ -125,19 +125,6 @@ export default function Landing({ setPage }) {
       return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
   }, [entranceType]);
-
-  const handleTitleClick = () => {
-    clickCountRef.current += 1;
-    clearTimeout(clickTimerRef.current);
-    if (clickCountRef.current >= 3) {
-      clickCountRef.current = 0;
-      setPage('hidden');
-      return;
-    }
-    clickTimerRef.current = setTimeout(() => {
-      clickCountRef.current = 0;
-    }, 1500);
-  };
 
   const displayName = username;
   const hasUsername = !!username;
@@ -184,13 +171,12 @@ export default function Landing({ setPage }) {
         {/* ── Title — character stagger (Elsye) ── */}
         {showTitle && (
           <h1
-            onClick={handleTitleClick}
-            className="font-pixel text-xl md:text-2xl tracking-wide cursor-pointer"
+            className="font-pixel text-xl md:text-2xl tracking-wide"
           >
             {hasUsername ? (
               <>
                 <CharStagger
-                  text="Hi,\u00A0"
+                  text={"Hi,\u00A0"}
                   baseDelay={0}
                   charDelay={110}
                   color="#d4a853"
@@ -226,14 +212,14 @@ export default function Landing({ setPage }) {
           animate={showButton ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
         >
-          <button onClick={() => setPage(targetPage)} className="pixel-btn">
-            {hasUsername ? 'masuk ke ruang kamu →' : 'buat nama dulu ✨'}
+          <button onClick={() => setShowPinModal(true)} className="pixel-btn">
+            {hasUsername ? 'masuk ke ruang kita →' : 'masuk ✨'}
           </button>
         </motion.div>
 
         {/* ── Bottom hints ── */}
         <motion.div
-          className="mt-8 flex flex-col items-center gap-4"
+          className="mt-8 flex flex-col items-center"
           initial={{ opacity: 0 }}
           animate={showButton ? { opacity: 1 } : { opacity: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}
@@ -241,12 +227,6 @@ export default function Landing({ setPage }) {
           <p className="text-sm text-soft-white/25 tracking-wider">
             kamu boleh masuk, pelan-pelan aja 🤍
           </p>
-          <button
-            onClick={() => setPage('menu')}
-            className="font-pixel text-[0.5rem] tracking-widest text-soft-white/20 hover:text-warm-gold transition-colors cursor-pointer"
-          >
-            jelajahi tanpa nama →
-          </button>
         </motion.div>
 
         {entranceDone && entranceType && (
@@ -255,6 +235,10 @@ export default function Landing({ setPage }) {
           </div>
         )}
       </div>
+
+      {showPinModal && (
+        <PinGate onSuccess={() => { setShowPinModal(false); setPage(targetPage); }} />
+      )}
     </section>
   );
 }

@@ -11,6 +11,7 @@ import {
   SecretHeartEntrance,
 } from '../components/entrances'
 import { SurpriseWheel, SurpriseContent, useIdleDetector } from '../components/surprise'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const ENTRANCE_COMPONENTS = {
   starfall: StarfallEntrance,
@@ -27,6 +28,7 @@ const portals = [
   { id: 'feed',        label: 'Feed Kita', emoji: '📝', desc: 'cerita kita', color: 'border-warm-gold/40 hover:border-warm-gold/80 hover:shadow-warm-gold/20' },
   { id: 'journal',    label: 'Ruang Jurnal', emoji: '📖', desc: 'tulis apa yang kamu rasain', color: 'border-soft-white/20 hover:border-soft-white/50 hover:shadow-soft-white/10' },
   { id: 'portfolio',  label: 'Karya Kita', emoji: '🎓', desc: 'portofolio & pencapaian', color: 'border-pixel-purple/40 hover:border-pixel-purple/80 hover:shadow-pixel-purple/20' },
+  { id: 'bible',      label: 'Bible Walk', emoji: '☦️', desc: 'baca Alkitab bareng', color: 'border-warm-gold/40 hover:border-warm-gold/80 hover:shadow-warm-gold/20' },
 ]
 
 const COMING_SOON = new Set(['journal'])
@@ -56,6 +58,9 @@ export default function Dashboard({ setPage }) {
     setShowIdleNotif(true)
   }, [])
   useIdleDetector(30000, handleIdle, entranceDone && !showWheel && !activeSurprise)
+
+  // ── Push notifications (subscribe on login) ──
+  usePushNotifications(profile?.username)
 
   const handleSurpriseSelect = (item) => {
     setShowWheel(false)
@@ -116,6 +121,7 @@ export default function Dashboard({ setPage }) {
     else if (id === 'nostalgia') setPage('baik')
     else if (id === 'world') setPage('world')
     else if (id === 'feed') setPage('feed')
+    else if (id === 'bible') setPage('bible')
     else setPage(id)
   }
 
@@ -143,21 +149,21 @@ export default function Dashboard({ setPage }) {
         {/* ── Navbar ── */}
         <div className={`dash-navbar w-full max-w-xl flex items-center justify-between mb-10 ${visible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 border border-warm-gold/40 bg-deep-blue flex items-center justify-center">
+            <div className="w-8 h-8 border border-warm-gold/40 bg-deep-blue flex items-center justify-center shrink-0">
               <img src="/assets/icons/mini-angel-wave.png" alt="avatar"
                 className="pixel-render w-full h-full object-contain"
                 onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block' }}
               />
               <span className="hidden text-sm">🌙</span>
             </div>
-            <span className="font-pixel text-[0.5rem] text-soft-white/60 tracking-wide">{displayName}</span>
+            <span className="font-pixel text-[0.55rem] text-soft-white/70 tracking-wide">{displayName}</span>
+            <button
+              onClick={handleSignOut}
+              className="font-pixel text-[0.45rem] text-soft-white/35 hover:text-pixel-pink transition-colors tracking-widest cursor-pointer ml-1"
+            >
+              ✕
+            </button>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="font-pixel text-[0.45rem] text-soft-white/25 hover:text-pixel-pink transition-colors tracking-widest cursor-pointer"
-          >
-            ganti nama
-          </button>
         </div>
 
         {/* ── Greeting ── */}
