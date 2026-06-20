@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react'
 import StarField from '../components/StarField'
+const LiveBackground = lazy(() => import('../components/LiveBackground'))
 import { useAuth } from '../hooks/useAuth'
 import { animate, stagger, createTimeline } from 'animejs'
 import { pickEntrance } from '../components/entrances/entrancePicker'
@@ -12,6 +13,7 @@ import {
 } from '../components/entrances'
 import { SurpriseWheel, SurpriseContent, useIdleDetector } from '../components/surprise'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import NotificationBell from '../components/NotificationBell'
 
 const ENTRANCE_COMPONENTS = {
   starfall: StarfallEntrance,
@@ -126,6 +128,9 @@ export default function Dashboard({ setPage }) {
   }
 
   const handleSignOut = () => {
+    // Identity is locked to this device once chosen — switching is deliberate,
+    // so a stray tap can't silently flip Dex <-> Angel and scramble progress.
+    if (!window.confirm(`Keluar dari akun ${displayName}? Kamu harus pilih akun lagi buat masuk.`)) return
     signOut()
     setPage('landing')
   }
@@ -134,6 +139,7 @@ export default function Dashboard({ setPage }) {
 
   return (
     <section className="relative flex flex-col items-center min-h-screen px-6 py-10 overflow-hidden select-none">
+      <Suspense fallback={null}><LiveBackground /></Suspense>
       <StarField />
 
       {/* Entrance animation overlay */}
@@ -164,6 +170,9 @@ export default function Dashboard({ setPage }) {
               ✕
             </button>
           </div>
+
+          {/* In-app notification bell — partner activity (complements push) */}
+          <NotificationBell username={profile?.username} onGoBible={() => setPage('bible')} />
         </div>
 
         {/* ── Greeting ── */}
@@ -263,12 +272,6 @@ export default function Dashboard({ setPage }) {
         </div>
       )}
 
-      {/* Debug: entrance type indicator (subtle) */}
-      {entranceDone && entranceType && (
-        <div className="fixed bottom-4 left-4 font-pixel text-[0.35rem] text-soft-white/15 tracking-wider select-none pointer-events-none z-0">
-          entrance: {entranceType}
-        </div>
-      )}
     </section>
   )
 }

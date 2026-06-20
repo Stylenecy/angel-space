@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import StarField from '../components/StarField';
 import PinGate from '../components/PinGate';
+const LiveBackground = lazy(() => import('../components/LiveBackground'));
 import { useAuth } from '../hooks/useAuth';
 import { pickEntrance } from '../components/entrances/entrancePicker';
 import {
@@ -133,6 +134,7 @@ export default function Landing({ setPage }) {
 
   return (
     <section className="relative flex flex-col items-center justify-center min-h-screen text-center px-6 overflow-hidden select-none">
+      <Suspense fallback={null}><LiveBackground /></Suspense>
       <StarField />
 
       {/* CRT scanline atmospheric overlay */}
@@ -229,11 +231,6 @@ export default function Landing({ setPage }) {
           </p>
         </motion.div>
 
-        {entranceDone && entranceType && (
-          <div className="fixed bottom-4 left-4 font-pixel text-[0.35rem] text-soft-white/15 tracking-wider select-none pointer-events-none z-0">
-            entrance: {entranceType}
-          </div>
-        )}
       </div>
 
       {showPinModal && (

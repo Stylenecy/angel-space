@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import StarField from '../components/StarField'
 import { useAuth } from '../hooks/useAuth'
+import { partnerOf } from '../lib/accounts'
 import { supabase } from '../lib/supabaseClient'
 
 const BOOKS = ['Kejadian', 'Keluaran', 'Imamat', 'Bilangan', 'Ulangan', 'Yosua', 'Hakim-hakim', 'Rut', '1 Samuel', '2 Samuel', '1 Raja-raja', '2 Raja-raja', '1 Tawarikh', '2 Tawarikh', 'Ezra', 'Nehemia', 'Ester', 'Ayub', 'Mazmur', 'Amsal', 'Pengkhotbah', 'Kidung Agung', 'Yesaya', 'Yeremia', 'Ratapan', 'Yehezkiel', 'Daniel', 'Hosea', 'Yoel', 'Amos', 'Obaja', 'Yunus', 'Mikha', 'Nahum', 'Habakuk', 'Zefanya', 'Hagai', 'Zakharia', 'Maleakhi', 'Matius', 'Markus', 'Lukas', 'Yohanes', 'Kisah Para Rasul', 'Roma', '1 Korintus', '2 Korintus', 'Galatia', 'Efesus', 'Filipi', 'Kolose', '1 Tesalonika', '2 Tesalonika', '1 Timotius', '2 Timotius', 'Titus', 'Filemon', 'Ibrani', 'Yakobus', '1 Petrus', '2 Petrus', '1 Yohanes', '2 Yohanes', '3 Yohanes', 'Yudas', 'Wahyu']
@@ -101,9 +102,20 @@ function PixelButton({ children, active, onClick, className = '' }) {
 
 const PARTNER_CHECK_KEY = 'angel-bible-partner-check'
 
-function getPartner(username) {
-  if (!username) return null
-  return username.toLowerCase() === 'dex' ? 'Angel' : 'Dex'
+const PL_BOOK_LIST = BOOKS.filter(b => PL_BOOKS.has(b))
+const PB_BOOK_LIST = BOOKS.filter(b => !PL_BOOKS.has(b))
+
+const getPartner = partnerOf
+
+// Group flat bible_progress rows -> { Book: [chapters...] } (sorted, unique).
+function groupRows(rows) {
+  const grouped = {}
+  rows.forEach(row => {
+    if (!grouped[row.book]) grouped[row.book] = []
+    if (!grouped[row.book].includes(row.chapter)) grouped[row.book].push(row.chapter)
+  })
+  Object.keys(grouped).forEach(b => grouped[b].sort((a, b) => a - b))
+  return grouped
 }
 
 async function sendPushNotification(username, title, body) {
@@ -117,9 +129,12 @@ async function sendPushNotification(username, title, body) {
 }
 
 export default function BibleWalk({ setPage }) {
-  const { profile } = useAuth()
-  const [progress, setProgress] = useState({})
-  const [notes, setNotes] = useState({})
+  const { profile, partner, signOut } = useAuth()
+  const me = profile?.username
+  const [progress, setProgress] = useState({})          // MY progress (scoped to me)
+  const [partnerProgress, setPartnerProgress] = useState({}) // partner's progress (read-only)
+  const [notes, setNotes] = useState({})                // MY notes (scoped to me)
+  const [whoseProgress, setWhoseProgress] = useState('me') // 'me' | 'partner' — Progres tab toggle
   const [loading, setLoading] = useState(true)
   const [currentBook, setCurrentBook] = useState('Wahyu')
   const [chapterInput, setChapterInput] = useState('1')
@@ -129,6 +144,8 @@ export default function BibleWalk({ setPage }) {
   const [versesLoading, setVersesLoading] = useState(false)
   const [showBibleText, setShowBibleText] = useState(true)
   const [partnerUpdates, setPartnerUpdates] = useState(null)
+  const [justRead, setJustRead] = useState(false)
+  const [showBookJump, setShowBookJump] = useState(false)
 
   const displayName = profile?.display_name || profile?.username || 'Angel'
   const bookChapters = CHAPTER_COUNTS[currentBook] || 1
@@ -137,14 +154,47 @@ export default function BibleWalk({ setPage }) {
   const noteKey = `${currentBook}-${chNum}`
   const currentNote = notes[noteKey] || ''
 
-  const partnerName = getPartner(profile?.username)
-  const isDebug = profile?.username?.toLowerCase() === 'dex'
+  const partnerName = partner || getPartner(me)
+
+  const isLastChapter = chNum >= bookChapters
+  const bookIdx = BOOKS.indexOf(currentBook)
+  const hasNextBook = bookIdx < BOOKS.length - 1
+
+  // Navigate to a specific book/chapter and scroll to top of reading area
+  const goTo = (book, chapter) => {
+    setJustRead(false)
+    if (book && book !== currentBook) setCurrentBook(book)
+    setChapterInput(String(chapter))
+    setActiveTab('read')
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Go to the next chapter — rolls over into the next book at the end
+  const goNextChapter = () => {
+    if (!isLastChapter) {
+      goTo(currentBook, chNum + 1)
+    } else if (hasNextBook) {
+      goTo(BOOKS[bookIdx + 1], 1)
+    }
+  }
+
+  const goPrevChapter = () => {
+    if (chNum > 1) {
+      goTo(currentBook, chNum - 1)
+    } else if (bookIdx > 0) {
+      const prevBook = BOOKS[bookIdx - 1]
+      goTo(prevBook, CHAPTER_COUNTS[prevBook] || 1)
+    }
+  }
 
   useEffect(() => {
     fetchProgress()
     fetchNotes()
+    fetchPartnerProgress()
     fetchPartnerUpdates()
-  }, [])
+  // Re-scope everything if the logged-in account changes mid-session.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me])
 
   useEffect(() => {
     fetchVerses()
@@ -152,33 +202,43 @@ export default function BibleWalk({ setPage }) {
 
   useEffect(() => {
     setNoteText(currentNote)
+    setJustRead(false)
   }, [currentBook, chNum])
 
   const fetchProgress = async () => {
+    if (!me) { setProgress(loadFallback()); setLoading(false); return }
+    // STRICTLY scoped to the logged-in account — never the union of both people.
     const { data } = await supabase
       .from('bible_progress')
-      .select('book, chapter, username')
+      .select('book, chapter')
+      .eq('username', me)
 
     if (data) {
-      const grouped = {}
-      data.forEach(row => {
-        if (!grouped[row.book]) grouped[row.book] = []
-        if (!grouped[row.book].includes(row.chapter)) {
-          grouped[row.book].push(row.chapter)
-        }
-      })
-      Object.keys(grouped).forEach(b => grouped[b].sort((a, b) => a - b))
-      setProgress(grouped)
+      setProgress(groupRows(data))
     } else {
       setProgress(loadFallback())
     }
     setLoading(false)
   }
 
+  const fetchPartnerProgress = async () => {
+    if (!partnerName) { setPartnerProgress({}); return }
+    const { data } = await supabase
+      .from('bible_progress')
+      .select('book, chapter')
+      .eq('username', partnerName)
+
+    if (data) setPartnerProgress(groupRows(data))
+    else setPartnerProgress({})
+  }
+
   const fetchNotes = async () => {
+    if (!me) { setNotes(loadFallbackNotes()); return }
+    // MY notes only — scoped to the logged-in account.
     const { data } = await supabase
       .from('bible_progress')
       .select('book, chapter, note')
+      .eq('username', me)
       .neq('note', '')
 
     if (data) {
@@ -240,10 +300,11 @@ export default function BibleWalk({ setPage }) {
     const updated = { ...progress }
     updated[currentBook] = [...readChapters, chNum].sort((a, b) => a - b)
     setProgress(updated)
+    setJustRead(true)
 
     const { error } = await supabase
       .from('bible_progress')
-      .insert({ username: profile?.username, book: currentBook, chapter: chNum })
+      .insert({ username: me, book: currentBook, chapter: chNum })
       .maybeSingle()
 
     if (error && error.code !== '23505') {
@@ -251,9 +312,8 @@ export default function BibleWalk({ setPage }) {
     }
 
     // Notify partner
-    const partner = getPartner(profile?.username)
-    if (partner) {
-      sendPushNotification(partner, `${displayName} baca Alkitab ✨`, `${currentBook} pasal ${chNum}`)
+    if (partnerName) {
+      sendPushNotification(partnerName, `${displayName} baca Alkitab ✨`, `${currentBook} pasal ${chNum}`)
     }
   }
 
@@ -264,7 +324,7 @@ export default function BibleWalk({ setPage }) {
     const { error } = await supabase
       .from('bible_progress')
       .upsert(
-        { username: profile?.username, book: currentBook, chapter: chNum, note: noteText },
+        { username: me, book: currentBook, chapter: chNum, note: noteText },
         { onConflict: 'username,book,chapter' }
       )
 
@@ -273,20 +333,24 @@ export default function BibleWalk({ setPage }) {
     }
 
     // Notify partner about note
-    if (noteText.trim()) {
-      const partner = getPartner(profile?.username)
-      if (partner) {
-        sendPushNotification(partner, `${displayName} nulis catatan ✏️`, `${currentBook} pasal ${chNum}: "${noteText.slice(0, 60)}${noteText.length > 60 ? '...' : ''}"`)
-      }
+    if (noteText.trim() && partnerName) {
+      sendPushNotification(partnerName, `${displayName} nulis catatan ✏️`, `${currentBook} pasal ${chNum}: "${noteText.slice(0, 60)}${noteText.length > 60 ? '...' : ''}"`)
     }
   }
 
-  const progressPercent = loading ? 0 : Math.min(100, Math.round(
-    (Object.values(progress).reduce((s, chs) => s + chs.length, 0) / 1189) * 100
-  ))
+  const TOTAL_CHAPTERS = 1189
 
-  const startedBooks = new Set(Object.keys(progress))
   const totalRead = Object.values(progress).reduce((sum, chs) => sum + chs.length, 0)
+  const progressPercent = loading ? 0 : Math.min(100, Math.round((totalRead / TOTAL_CHAPTERS) * 100))
+  const startedBooks = new Set(Object.keys(progress))
+
+  const partnerTotalRead = Object.values(partnerProgress).reduce((sum, chs) => sum + chs.length, 0)
+  const partnerPercent = Math.min(100, Math.round((partnerTotalRead / TOTAL_CHAPTERS) * 100))
+
+  // Which dataset the Progres tab is currently showing.
+  const viewingPartner = whoseProgress === 'partner'
+  const shownProgress = viewingPartner ? partnerProgress : progress
+  const shownTotal = viewingPartner ? partnerTotalRead : totalRead
 
   const tabClass = (tab) =>
     `flex-1 font-pixel text-[0.55rem] sm:text-[0.6rem] py-3 border-2 transition-all duration-100 active:translate-y-0.5
@@ -314,6 +378,23 @@ export default function BibleWalk({ setPage }) {
         ← Kembali
       </button>
 
+      {/* Identity indicator + switch account — never ambiguous whose space this is */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-deep-blue/40 border border-warm-gold/20 px-2.5 py-1.5">
+        <span className="font-pixel text-[0.4rem] sm:text-[0.45rem] text-soft-white/40">kamu:</span>
+        <span className="font-pixel text-[0.45rem] sm:text-[0.5rem] text-warm-gold">{displayName}</span>
+        <button
+          onClick={() => {
+            // Deliberate switch only — confirm so a stray tap can't flip accounts.
+            if (!window.confirm(`Keluar dari akun ${displayName}? Kamu harus pilih akun lagi buat masuk.`)) return
+            signOut(); setPage('landing')
+          }}
+          title="Ganti akun / keluar"
+          className="ml-1 font-pixel text-[0.4rem] sm:text-[0.45rem] text-soft-white/35 hover:text-pixel-pink border-l border-soft-white/10 pl-2 transition-colors cursor-pointer"
+        >
+          ganti ⇄
+        </button>
+      </div>
+
       {partnerUpdates && (
         <div className="relative z-10 w-full max-w-2xl mb-4 bg-pixel-green/10 border-2 border-pixel-green/30 p-3 sm:p-4 flex items-start justify-between gap-3">
           <div className="flex-1">
@@ -338,25 +419,51 @@ export default function BibleWalk({ setPage }) {
           Hai {displayName}, yuk baca Alkitab bareng.
         </p>
 
-        <div className="mt-6 flex flex-col items-center">
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#111b3d" strokeWidth="8" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#d4a853" strokeWidth="8"
-                strokeDasharray={`${2 * Math.PI * 52}`}
-                strokeDashoffset={`${2 * Math.PI * 52 * (1 - progressPercent / 100)}`}
-                strokeLinecap="round"
-                className="transition-all duration-700"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-pixel text-[0.8rem] sm:text-[0.9rem] text-warm-gold">{progressPercent}%</span>
-              <span className="font-sans text-xs sm:text-sm text-soft-white/50">{totalRead}/1189</span>
+        {/* ── Two distinct rings: MINE (gold) vs PARTNER (green) ── */}
+        <div className="mt-6 flex items-start justify-center gap-6 sm:gap-10">
+          {/* My ring */}
+          <div className="flex flex-col items-center">
+            <span className="font-pixel text-[0.45rem] sm:text-[0.5rem] text-warm-gold mb-2 tracking-wider uppercase">Kamu</span>
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#111b3d" strokeWidth="8" />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#d4a853" strokeWidth="8"
+                  strokeDasharray={`${2 * Math.PI * 52}`}
+                  strokeDashoffset={`${2 * Math.PI * 52 * (1 - progressPercent / 100)}`}
+                  strokeLinecap="round"
+                  className="transition-all duration-700"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-pixel text-[0.7rem] sm:text-[0.8rem] text-warm-gold">{progressPercent}%</span>
+                <span className="font-sans text-[0.65rem] sm:text-xs text-soft-white/50">{totalRead}/{TOTAL_CHAPTERS}</span>
+              </div>
             </div>
+            <p className="font-sans text-xs sm:text-sm text-soft-white/40 mt-2">{startedBooks.size} kitab</p>
           </div>
-          <p className="font-sans text-sm sm:text-base text-soft-white/40 mt-2">
-            {startedBooks.size} kitab dimulai dari 66
-          </p>
+
+          {/* Partner ring */}
+          {partnerName && (
+            <div className="flex flex-col items-center">
+              <span className="font-pixel text-[0.45rem] sm:text-[0.5rem] text-pixel-green mb-2 tracking-wider uppercase">{partnerName}</span>
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#111b3d" strokeWidth="8" />
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#38b764" strokeWidth="8"
+                    strokeDasharray={`${2 * Math.PI * 52}`}
+                    strokeDashoffset={`${2 * Math.PI * 52 * (1 - partnerPercent / 100)}`}
+                    strokeLinecap="round"
+                    className="transition-all duration-700"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-pixel text-[0.7rem] sm:text-[0.8rem] text-pixel-green">{partnerPercent}%</span>
+                  <span className="font-sans text-[0.65rem] sm:text-xs text-soft-white/50">{partnerTotalRead}/{TOTAL_CHAPTERS}</span>
+                </div>
+              </div>
+              <p className="font-sans text-xs sm:text-sm text-soft-white/40 mt-2">{new Set(Object.keys(partnerProgress)).size} kitab</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -374,10 +481,16 @@ export default function BibleWalk({ setPage }) {
             <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
               <div>
                 <label className="block font-sans text-sm text-soft-white/50 mb-1.5">Kitab</label>
-                <select value={currentBook} onChange={e => setCurrentBook(e.target.value)}
-                  className="w-full bg-midnight border-2 border-soft-white/10 text-soft-white font-sans text-base sm:text-lg p-2.5 focus:border-warm-gold/50 outline-none cursor-pointer">
-                  {BOOKS.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
+                <div className="flex gap-2 items-stretch">
+                  <select value={currentBook} onChange={e => setCurrentBook(e.target.value)}
+                    className="flex-1 min-w-0 bg-midnight border-2 border-soft-white/10 text-soft-white font-sans text-base sm:text-lg p-2.5 focus:border-warm-gold/50 outline-none cursor-pointer">
+                    {BOOKS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                  <button onClick={() => setShowBookJump(true)} title="Loncat kitab"
+                    className="shrink-0 px-3 bg-midnight border-2 border-warm-gold/30 text-warm-gold hover:bg-warm-gold/15 hover:border-warm-gold/60 transition-colors cursor-pointer active:translate-y-0.5">
+                    <span className="text-base">⤵</span>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block font-sans text-sm text-soft-white/50 mb-1.5">Pasal</label>
@@ -390,10 +503,52 @@ export default function BibleWalk({ setPage }) {
               </div>
             </div>
 
+            {/* Prev / Next chapter nav */}
+            <div className="flex items-center gap-2 mb-4">
+              <button onClick={goPrevChapter}
+                disabled={chNum <= 1 && bookIdx === 0}
+                className="flex-1 font-pixel text-[0.45rem] sm:text-[0.5rem] py-2.5 border-2 border-soft-white/10 text-soft-white/50 hover:text-warm-gold hover:border-warm-gold/30 transition-colors cursor-pointer bg-midnight disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-soft-white/50 disabled:hover:border-soft-white/10 active:translate-y-0.5">
+                ◄ sebelumnya
+              </button>
+              <button onClick={goNextChapter}
+                disabled={isLastChapter && !hasNextBook}
+                className="flex-1 font-pixel text-[0.45rem] sm:text-[0.5rem] py-2.5 border-2 border-soft-white/10 text-soft-white/50 hover:text-warm-gold hover:border-warm-gold/30 transition-colors cursor-pointer bg-midnight disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-soft-white/50 disabled:hover:border-soft-white/10 active:translate-y-0.5">
+                selanjutnya ►
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <PixelButton active={readChapters.includes(chNum)} onClick={markRead}>
+              <PixelButton active={readChapters.includes(chNum)} onClick={markRead} className="w-full">
                 {readChapters.includes(chNum) ? '✓ Sudah dibaca' : 'Tandai sudah baca'}
               </PixelButton>
+
+              {/* Post-read confirmation + easy next-chapter nav */}
+              {justRead && (
+                <div className="bg-pixel-green/10 border-2 border-pixel-green/40 p-3 sm:p-4 animate-fade-in">
+                  <p className="font-pixel text-[0.5rem] sm:text-[0.55rem] text-pixel-green mb-1">
+                    ✓ {currentBook} {chNum} ditandai!
+                  </p>
+                  <p className="font-sans text-sm text-soft-white/50 mb-3">
+                    {isLastChapter && !hasNextBook
+                      ? 'Kamu sampai di akhir Alkitab. ✨'
+                      : 'Mantap. Lanjut ke pasal berikutnya?'}
+                  </p>
+                  <div className="flex gap-2">
+                    {(!isLastChapter || hasNextBook) && (
+                      <button onClick={goNextChapter}
+                        className="flex-1 font-pixel text-[0.45rem] sm:text-[0.5rem] py-2.5 border-2 border-pixel-green/50 text-pixel-green hover:bg-pixel-green/15 transition-colors cursor-pointer bg-midnight active:translate-y-0.5 shadow-[2px_2px_0_0_#38b764]">
+                        {isLastChapter
+                          ? `► ${BOOKS[bookIdx + 1]} 1`
+                          : `► Pasal ${chNum + 1}`}
+                      </button>
+                    )}
+                    <button onClick={() => setJustRead(false)}
+                      className="font-pixel text-[0.45rem] sm:text-[0.5rem] py-2.5 px-4 border-2 border-soft-white/10 text-soft-white/40 hover:text-soft-white/70 transition-colors cursor-pointer bg-midnight active:translate-y-0.5">
+                      tutup
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block font-sans text-sm text-soft-white/50 mb-1.5">Catatan (1-2 kalimat)</label>
@@ -430,8 +585,8 @@ export default function BibleWalk({ setPage }) {
                   <p className="font-sans text-sm text-soft-white/30 text-center py-4">Teks belum tersedia</p>
                 )}
                 {verses && verses.map(v => (
-                  <p key={v.verse} className="font-sans text-sm sm:text-base text-soft-white/80 leading-relaxed">
-                    <sup className="text-warm-gold/60 text-[0.65rem] mr-1.5">{v.verse}</sup>
+                  <p key={v.verse} className="font-sans text-base sm:text-lg text-soft-white/85 leading-loose">
+                    <sup className="text-warm-gold/60 text-[0.75rem] mr-1.5">{v.verse}</sup>
                     {cleanVerse(v.text)}
                   </p>
                 ))}
@@ -443,20 +598,50 @@ export default function BibleWalk({ setPage }) {
 
       {activeTab === 'progress' && (
         <div className="relative z-10 w-full max-w-2xl space-y-3">
+          {/* ── Whose tiles? — Kamu vs Partner toggle ── */}
+          {partnerName && (
+            <div className="flex gap-2 mb-1">
+              {[['me', 'Kamu'], ['partner', partnerName]].map(([key, label]) => {
+                const on = whoseProgress === key
+                const isMe = key === 'me'
+                return (
+                  <button key={key} onClick={() => setWhoseProgress(key)}
+                    className={`flex-1 font-pixel text-[0.5rem] sm:text-[0.55rem] py-2.5 border-2 transition-all duration-100 active:translate-y-0.5 cursor-pointer
+                      ${on
+                        ? (isMe
+                            ? 'bg-warm-gold/15 border-warm-gold/60 text-warm-gold shadow-[2px_2px_0_0_#d4a853]'
+                            : 'bg-pixel-green/15 border-pixel-green/60 text-pixel-green shadow-[2px_2px_0_0_#38b764]')
+                        : 'bg-midnight text-soft-white/40 border-soft-white/10 hover:border-soft-white/25'}`}>
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Whose-progress label */}
+          <p className="font-sans text-xs sm:text-sm text-soft-white/40 px-1">
+            {viewingPartner
+              ? `Progres ${partnerName} — ${shownTotal} pasal`
+              : `Progres kamu — ${shownTotal} pasal`}
+          </p>
+
           {BOOKS.map(book => {
-            const chs = progress[book]
+            const chs = shownProgress[book]
             if (!chs || chs.length === 0) return null
             return (
               <div key={book} className="bg-deep-blue/40 border-2 border-soft-white/5 p-3 sm:p-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-sans text-sm sm:text-base text-soft-white/80">{book}</span>
-                  <span className="font-pixel text-[0.4rem] sm:text-[0.45rem] text-warm-gold/60">{chs.length}/{CHAPTER_COUNTS[book]}</span>
+                  <span className={`font-pixel text-[0.4rem] sm:text-[0.45rem] ${viewingPartner ? 'text-pixel-green/70' : 'text-warm-gold/60'}`}>{chs.length}/{CHAPTER_COUNTS[book]}</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {Array.from({ length: CHAPTER_COUNTS[book] }, (_, i) => i + 1).map(ch => (
                     <span key={ch}
                       className={`inline-block w-6 h-6 sm:w-7 sm:h-7 text-center leading-6 sm:leading-7 text-[0.55rem] sm:text-[0.6rem] font-pixel
-                        ${chs.includes(ch) ? 'bg-pixel-green text-midnight' : 'bg-midnight border border-soft-white/10 text-soft-white/20'}`}
+                        ${chs.includes(ch)
+                          ? (viewingPartner ? 'bg-pixel-green text-midnight' : 'bg-warm-gold text-midnight')
+                          : 'bg-midnight border border-soft-white/10 text-soft-white/20'}`}
                     >
                       {ch}
                     </span>
@@ -465,11 +650,55 @@ export default function BibleWalk({ setPage }) {
               </div>
             )
           })}
-          {totalRead === 0 && !loading && (
+          {shownTotal === 0 && !loading && (
             <p className="text-center font-sans text-base sm:text-lg text-soft-white/30 py-12">
-              Belum ada progres. Mulai baca dulu, yuk!
+              {viewingPartner
+                ? `${partnerName} belum punya progres.`
+                : 'Belum ada progres. Mulai baca dulu, yuk!'}
             </p>
           )}
+        </div>
+      )}
+
+      {/* ── Quick book-jump modal (Testament navigation) ── */}
+      {showBookJump && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-midnight/80 animate-fade-in"
+          onClick={() => setShowBookJump(false)}>
+          <div onClick={e => e.stopPropagation()}
+            className="bg-deep-blue border-2 border-warm-gold/40 shadow-[4px_4px_0_0_#d4a853] w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b-2 border-soft-white/10 shrink-0">
+              <p className="font-pixel text-[0.55rem] sm:text-[0.6rem] text-warm-gold">📖 Loncat ke kitab</p>
+              <button onClick={() => setShowBookJump(false)}
+                className="font-pixel text-[0.5rem] text-soft-white/40 hover:text-warm-gold transition-colors cursor-pointer px-2">✕</button>
+            </div>
+            <div className="overflow-y-auto p-3 sm:p-4 space-y-4">
+              {[['Perjanjian Lama', PL_BOOK_LIST], ['Perjanjian Baru', PB_BOOK_LIST]].map(([label, list]) => (
+                <div key={label}>
+                  <p className="font-pixel text-[0.45rem] sm:text-[0.5rem] text-soft-white/40 mb-2 uppercase tracking-wider">{label}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {list.map(b => {
+                      const done = (progress[b]?.length || 0)
+                      const total = CHAPTER_COUNTS[b] || 1
+                      const isCur = b === currentBook
+                      return (
+                        <button key={b}
+                          onClick={() => { goTo(b, 1); setShowBookJump(false) }}
+                          className={`text-left p-2 border-2 transition-colors cursor-pointer active:translate-y-0.5
+                            ${isCur
+                              ? 'bg-warm-gold/15 border-warm-gold/60 text-warm-gold'
+                              : 'bg-midnight border-soft-white/10 text-soft-white/70 hover:border-warm-gold/40 hover:text-warm-gold'}`}>
+                          <span className="font-sans text-sm sm:text-base block leading-tight truncate">{b}</span>
+                          <span className={`font-pixel text-[0.35rem] ${done >= total ? 'text-pixel-green' : 'text-soft-white/30'}`}>
+                            {done}/{total}{done >= total ? ' ✓' : ''}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </section>

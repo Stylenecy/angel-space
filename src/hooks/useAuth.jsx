@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
+import { canonicalUsername, partnerOf } from '../lib/accounts'
 
 const STORAGE_KEY = 'angel_space_username'
 
@@ -11,16 +12,21 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      _setUsername(stored.trim())
+      // Canonicalize on read so old free-text logins snap to a clean account.
+      const canon = canonicalUsername(stored)
+      if (canon) {
+        _setUsername(canon)
+        if (canon !== stored) localStorage.setItem(STORAGE_KEY, canon)
+      }
     }
     setLoading(false)
   }, [])
 
   const setUsername = (name) => {
-    const trimmed = (name || '').trim()
-    if (trimmed) {
-      localStorage.setItem(STORAGE_KEY, trimmed)
-      _setUsername(trimmed)
+    const canon = canonicalUsername(name)
+    if (canon) {
+      localStorage.setItem(STORAGE_KEY, canon)
+      _setUsername(canon)
     }
   }
 
@@ -29,10 +35,11 @@ export function AuthProvider({ children }) {
     _setUsername(null)
   }
 
+  const partner = partnerOf(username)
   const profile = username ? { display_name: username, username } : null
 
   return (
-    <AuthContext.Provider value={{ username, profile, loading, setUsername, signOut }}>
+    <AuthContext.Provider value={{ username, partner, profile, loading, setUsername, signOut }}>
       {children}
     </AuthContext.Provider>
   )
