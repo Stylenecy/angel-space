@@ -1,8 +1,8 @@
 # PROJECT_MASTER — Angel's Space
 
 > **Created:** 19 Jun 2026, 02:26
-> **Last Session:** 21 Jun 2026 (Minggu) — Sesi 4: review + verify Sesi-3 work, build/boot GREEN, polish debug-string, prep SIAP-PUSH.
-> **Deployed:** ✅ `https://angel-space.vercel.app` (master@d734e6e) — Sesi 3+4 work LOCAL, belum di-push.
+> **Last Session:** 21 Jun 2026 (Minggu) — Sesi 4: review+verify, akun-lock, Three.js bg, font Alkitab, **PUSHED + DEPLOYED LIVE**.
+> **Deployed:** ✅ `https://angel-space.vercel.app` (**master@07c6b78** — LIVE, verified 200). Sesi 3+4 semua udah live.
 
 ---
 
@@ -34,20 +34,23 @@
 - Round-trip Supabase nyata (insert/upsert `bible_progress`, baca app_settings).
 - Push notif end-to-end (butuh VAPID_PRIVATE_KEY + Angel grant izin).
 
-**📦 COMMIT:** Sesi 3+4 di-commit lokal `master@52609e3` (11 file, +882/-156, **NO co-author**, belum di-push). Dev server idup di `localhost:5173` buat review.
+**📦 COMMIT + DEPLOY:** Clean commit `master@07c6b78` (14 file, +1090/-160, **NO co-author**, **secret-free**) — **PUSHED + auto-deploy Vercel selesai, LIVE verified**:
+- `angel-space.vercel.app/` → 200, bundle baru (account-lock + three terdeteksi di JS).
+- Three chunk `LiveBackground-*.js` → 200 (471kB, ada WebGLRenderer).
+- Bible source GitHub raw → 200 (teks ayat keload).
+- ⚠️ **Secret incident**: VAPID_PRIVATE_KEY sempet ke-tulis di docs → kepush diblok classifier → di-scrub, commit ulang bersih (commit lama dibuang sebelum push). **Key TIDAK pernah sampe GitHub**, ga perlu rotate.
 
-**🔴 LANGKAH MANUAL DEX (1-klik tiap nomor):**
-1. **Review browser** — buka `http://localhost:5173` (dev server udah jalan). Cek: Landing→PIN→Login 2 kartu → pick Dex → Bible Walk: mark read, ring "Kamu" gold naik. Ganti ⇄ → pick Angel → ring kepisah. Bell di Dashboard.
-2. **Push (= auto-deploy Vercel):** `git push origin master`
-3. **Vercel env** — set `VAPID_PRIVATE_KEY` (Sensitive ✅) di `vercel.com/stylenecy/angel-space/settings/environment-variables`. **Value-nya ambil dari `.env.local` lokal / catatan pribadi Dex — JANGAN ditulis di file yang ke-commit.** Tanpa ini push-notif gagal diam-diam.
-4. **Supabase SQL** (opsional, additive, no drop) — di SQL editor:
+**🔴 SISA LANGKAH MANUAL DEX (web udah live, ini buat fitur penuh):**
+1. **Eyeball live** — buka `https://angel-space.vercel.app` di HP: cek glow Three.js cakep, font Alkitab enak dibaca, login picker → mark read → ring kepisah gold/green, akun ke-lock (ganti minta konfirmasi).
+2. **Vercel env** — set `VAPID_PRIVATE_KEY` (Sensitive ✅) di `vercel.com/stylenecy/angel-space/settings/environment-variables`. **Value ambil dari `.env.local` lokal / catatan pribadi — JANGAN tulis di file ke-commit.** Tanpa ini push-notif HP gagal diam. (In-app bell tetep jalan tanpa ini.)
+3. **Supabase SQL** (OPSIONAL, additive, no drop — boleh kapan aja, post-deploy aman):
    ```sql
    ALTER TABLE bible_progress ADD CONSTRAINT bible_progress_user_book_ch UNIQUE (username, book, chapter);
    CREATE INDEX IF NOT EXISTS idx_bible_progress_username ON bible_progress (username);
    UPDATE bible_progress SET username='Dex'   WHERE lower(username)='dex';
    UPDATE bible_progress SET username='Angel' WHERE lower(username)='angel';
    ```
-   (Constraint bikin upsert catatan dedupe bener; UPDATE narik legacy row non-kanonik ke akun yg betul.)
+   (Constraint = upsert catatan dedupe bener; UPDATE narik legacy row lowercase ke akun betul. App jalan tanpa ini — separation udah client-side.)
 
 ---
 
