@@ -1,8 +1,8 @@
 # PROJECT_MASTER — Angel's Space
 
 > **Created:** 19 Jun 2026, 02:26
-> **Last Session:** 21 Jun 2026 (Minggu) — Sesi 5: **2 realm baru (Kebun Hati + Meja Surat)** + finish Karya Kita + fix Feed + polish World.
-> **Deployed:** ✅ `https://angel-space.vercel.app` — Sesi 4 = `07c6b78` LIVE. Sesi 5 nyusul (build GREEN).
+> **Last Session:** 21 Jun 2026 (Minggu) — Sesi 5: **2 realm baru (Kebun Hati + Meja Surat)** + finish Karya Kita + fix Feed + polish World. **PUSHED + LIVE.**
+> **Deployed:** ✅ `https://angel-space.vercel.app` (**master@5859ae4** — LIVE, verified: bundle live ada Kebun Hati + Meja Surat + Karya Kita).
 
 ---
 
@@ -25,8 +25,9 @@
 **✅ Verified:** `npm run build` GREEN (556 modules, main 197kB gzip + Three lazy 120kB). Dev server transform tiap modul baru → 200. **Blm diverify (browser):** click-through tiap realm + round-trip Supabase (tabel baru blm ada → jalan via localStorage fallback sampai SQL dijalanin).
 
 **🔴 SISA MANUAL DEX Sesi-5:**
-1. Push (kalau belum auto): commit udah disiapin.
-2. **Supabase SQL** — jalanin `supabase/realms.sql` (bikin tabel `kebun_hati`/`meja_surat`/`karya`/`posts`, RLS disabled biar anon bisa nulis). Tanpa ini realm baru jalan tp data cuma di localStorage (ga sync antar-device/antar-orang).
+1. ✅ Push + deploy — DONE (`5859ae4` LIVE, verified).
+2. **Supabase SQL** — jalanin `supabase/realms.sql` (bikin tabel `kebun_hati`/`meja_surat`/`karya`/`posts`, RLS disabled biar anon bisa nulis). **Tanpa ini realm baru tetep jalan** tp data cuma di localStorage (ga sync antar-device/antar-orang). Boleh kapan aja, aman post-deploy.
+3. Eyeball di HP: buka tiap portal baru (Kebun Hati 🌷, Meja Surat 💌, Karya Kita 🎓), cek nanam jurnal / kirim surat tersegel / tambah karya.
 
 ---
 
