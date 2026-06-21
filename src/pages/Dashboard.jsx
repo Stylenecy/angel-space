@@ -28,12 +28,13 @@ const portals = [
   { id: 'bilikSuasana', label: 'Bilik Suasana', emoji: '🎭', desc: 'hari ini kamu gimana?', color: 'border-pixel-pink/40 hover:border-pixel-pink/80 hover:shadow-pixel-pink/20' },
   { id: 'nostalgia',   label: 'Bilik Nostalgia', emoji: '🖼️', desc: 'kenangan kita', color: 'border-calm-blue/40 hover:border-calm-blue/80 hover:shadow-calm-blue/20' },
   { id: 'feed',        label: 'Feed Kita', emoji: '📝', desc: 'cerita kita', color: 'border-warm-gold/40 hover:border-warm-gold/80 hover:shadow-warm-gold/20' },
-  { id: 'journal',    label: 'Ruang Jurnal', emoji: '📖', desc: 'tulis apa yang kamu rasain', color: 'border-soft-white/20 hover:border-soft-white/50 hover:shadow-soft-white/10' },
+  { id: 'journal',    label: 'Kebun Hati', emoji: '🌷', desc: 'tanam isi hatimu', color: 'border-pixel-green/40 hover:border-pixel-green/80 hover:shadow-pixel-green/20' },
+  { id: 'surat',      label: 'Meja Surat', emoji: '💌', desc: 'surat buat berdua', color: 'border-pixel-pink/40 hover:border-pixel-pink/80 hover:shadow-pixel-pink/20' },
   { id: 'portfolio',  label: 'Karya Kita', emoji: '🎓', desc: 'portofolio & pencapaian', color: 'border-pixel-purple/40 hover:border-pixel-purple/80 hover:shadow-pixel-purple/20' },
   { id: 'bible',      label: 'Bible Walk', emoji: '☦️', desc: 'baca Alkitab bareng', color: 'border-warm-gold/40 hover:border-warm-gold/80 hover:shadow-warm-gold/20' },
 ]
 
-const COMING_SOON = new Set(['journal'])
+const COMING_SOON = new Set()
 
 function getGreeting(name) {
   const h = new Date().getHours()

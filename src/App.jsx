@@ -15,6 +15,8 @@ import HiddenMessage from './pages/HiddenMessage'
 import Feed from './pages/Feed'
 import World from './pages/World'
 import BibleWalk from './pages/BibleWalk'
+import KebunHati from './pages/KebunHati'
+import MejaSurat from './pages/MejaSurat'
 import PixelDesktop from './pages/PixelDesktop'
 import PixelTrailCursor from './components/PixelTrailCursor'
 
@@ -275,6 +277,8 @@ function AppInner() {
       {page === 'feed'         && <Feed setPage={setPage} />}
       {page === 'world'        && <World setPage={setPage} />}
       {page === 'bible'        && <BibleWalk setPage={setPage} />}
+      {page === 'journal'      && <KebunHati setPage={setPage} />}
+      {page === 'surat'        && <MejaSurat setPage={setPage} />}
     </div>
   )
 }

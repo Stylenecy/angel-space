@@ -70,7 +70,7 @@ export default function Capek({ setPage }) {
             ${p3Done ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
           `}
         >
-          <div className="w-20 h-20 bg-deep-blue border-3 border-soft-white/20 flex items-center justify-center animate-float pixel-render rounded-lg shadow-lg">
+          <div className="w-20 h-20 bg-deep-blue border-3 border-soft-white/20 flex items-center justify-center animate-float pixel-render shadow-lg">
             <img
               src="/assets/icons/kucing-duduk.png"
               alt="kucing mini duduk"

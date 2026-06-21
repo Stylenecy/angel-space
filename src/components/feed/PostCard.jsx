@@ -19,6 +19,10 @@ export default function PostCard({ post, onDelete, isOwner }) {
     }
   }
 
+  // Display name from author_id (dex/angel) so it works without an author_name column.
+  const authorName = post.author_name
+    || (post.author_id === 'dex' ? 'Dex' : post.author_id === 'angel' ? 'Angel' : (post.author_id || 'Angel'))
+
   const timeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000)
     if (seconds < 60) return 'baru saja'
@@ -31,15 +35,15 @@ export default function PostCard({ post, onDelete, isOwner }) {
   }
 
   return (
-    <div className="post-card pixel-card bg-deep-blue/80 border-2 border-soft-white/10 mb-4 overflow-hidden opacity-0">
+    <div className="post-card pixel-card bg-deep-blue/80 border-2 border-soft-white/10 mb-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-soft-white/5">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-midnight border border-warm-gold/30 flex items-center justify-center text-xs">
-            {post.author_name?.[0]?.toUpperCase() || 'A'}
+            {authorName[0]?.toUpperCase() || 'A'}
           </div>
           <span className="font-pixel text-[0.45rem] text-warm-gold tracking-wide">
-            {post.author_name || 'Angel'}
+            {authorName}
           </span>
         </div>
         <span className="text-xs text-soft-white/25">

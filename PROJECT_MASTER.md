@@ -1,8 +1,32 @@
 # PROJECT_MASTER — Angel's Space
 
 > **Created:** 19 Jun 2026, 02:26
-> **Last Session:** 21 Jun 2026 (Minggu) — Sesi 4: review+verify, akun-lock, Three.js bg, font Alkitab, **PUSHED + DEPLOYED LIVE**.
-> **Deployed:** ✅ `https://angel-space.vercel.app` (**master@07c6b78** — LIVE, verified 200). Sesi 3+4 semua udah live.
+> **Last Session:** 21 Jun 2026 (Minggu) — Sesi 5: **2 realm baru (Kebun Hati + Meja Surat)** + finish Karya Kita + fix Feed + polish World.
+> **Deployed:** ✅ `https://angel-space.vercel.app` — Sesi 4 = `07c6b78` LIVE. Sesi 5 nyusul (build GREEN).
+
+---
+
+## 🆕 SESSION 5 — 21 Jun 2026 (Minggu ~pagi) — REALM BARU + FINISH ONGOING
+
+**Goal:** bikin realm baru Kebun Hati + Meja Surat, poles & selesaikan ruang yg masih ongoing.
+
+**🆕 Realm baru:**
+- **Kebun Hati** (`KebunHati.jsx` + `useKebunHati.js`) — jurnal harian PRIVATE per orang (scoped username, kayak Bible). Pilih mood (6 bunga: 🌻🌸🌿🌙🍂🌧️) + tulis → "kebun" tumbuh (tiap entry = bunga, framer-motion spring). Timeline + hapus. Supabase tabel `kebun_hati` + localStorage fallback. Wired ke portal **journal** (dulu COMING_SOON "Ruang Jurnal" → sekarang aktif).
+- **Meja Surat** (`MejaSurat.jsx` + `useMejaSurat.js`) — surat ke partner, bisa **disegel sampai tanggal** (`deliver_at`). Tab Diterima/Dikirim/Tulis. Surat tersegel = 📜 + countdown, baru kebuka pas waktunya. Push notif ke partner pas kirim. Supabase `meja_surat` + fallback. Portal baru **surat** di Dashboard.
+
+**🔧 Finish/poles ongoing:**
+- **Karya Kita** (Portfolio.jsx) — dulu stub "[sedang dibangun]" → sekarang **realm penuh**: rak karya/pencapaian shared, owner Dex/Angel/Berdua, filter, tambah inline (judul/cerita/link), hapus. `useKarya.js` + tabel `karya` + fallback.
+- **Feed** — FIX BUG: `PostCard` punya `opacity-0` tanpa anim → **post ke-render invisible**, dihapus. Author ga hardcode 'angel' lagi → pake akun login (Dex/Angel). isOwner per-post (cuma bisa hapus punya sendiri). Label "[sedang dibangun]" → "cerita kecil kita berdua ✨".
+- **World** — room **faith** dulu dead-end "[segera]" → sekarang masuk **Bible Walk**. `rounded-lg` → sharp (pixel rule).
+- **Capek** — buang `rounded-lg` (pixel rule).
+
+**Files baru:** `KebunHati.jsx`, `MejaSurat.jsx`, `useKebunHati.js`, `useMejaSurat.js`, `useKarya.js`, `supabase/realms.sql`. **Edit:** `Portfolio.jsx` (rewrite), `Feed.jsx`, `PostCard.jsx`, `World.jsx`, `Capek.jsx`, `Dashboard.jsx` (portal), `App.jsx` (route).
+
+**✅ Verified:** `npm run build` GREEN (556 modules, main 197kB gzip + Three lazy 120kB). Dev server transform tiap modul baru → 200. **Blm diverify (browser):** click-through tiap realm + round-trip Supabase (tabel baru blm ada → jalan via localStorage fallback sampai SQL dijalanin).
+
+**🔴 SISA MANUAL DEX Sesi-5:**
+1. Push (kalau belum auto): commit udah disiapin.
+2. **Supabase SQL** — jalanin `supabase/realms.sql` (bikin tabel `kebun_hati`/`meja_surat`/`karya`/`posts`, RLS disabled biar anon bisa nulis). Tanpa ini realm baru jalan tp data cuma di localStorage (ga sync antar-device/antar-orang).
 
 ---
 
@@ -147,10 +171,11 @@ Bukan pengganti WhatsApp, tapi **ruang yang sengaja didatangi** — intentionall
 |-----------|------|--------|
 | ✅ P1 | **Bible Walk — polish** (post-read flow, book nav, akun terpisah + bugfix) | DONE 20 Jun (local, blm push) |
 | ✅ P2 | **In-app notification system** (bell icon, unread count) | DONE 20 Jun (local, blm push) |
-| 🟡 P2 | **Kebun Hati** — daily journal realm | Not started |
-| 🟡 P2 | **Meja Surat** — timed messages for partner | Not started |
-| 🟢 P3 | **Ruang Nostalgia** — photo timeline | Not started |
-| 🟢 P3 | **Dunia Utama** — isometric/tile-based exploration | Not started |
+| ✅ P2 | **Kebun Hati** — daily journal realm | DONE 21 Jun (Sesi 5) |
+| ✅ P2 | **Meja Surat** — timed messages for partner | DONE 21 Jun (Sesi 5) |
+| ✅ P3 | **Karya Kita** — portfolio shared (dulu stub) | DONE 21 Jun (Sesi 5) |
+| 🟢 P3 | **Ruang Nostalgia** — photo timeline | ADA (Baik/Memory Gallery) |
+| 🟢 P3 | **Dunia Utama** — isometric/tile-based exploration | ADA (World/WorldCanvas) |
 
 ---
 

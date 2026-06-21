@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import StarField from '../components/StarField'
+import { useAuth } from '../hooks/useAuth'
 import { usePosts } from '../hooks/usePosts'
 import PostCard from '../components/feed/PostCard'
 
 /**
- * Feed.jsx — Instagram-like feed page.
+ * Feed.jsx — Instagram-like feed page (shared between Dex & Angel).
  */
 export default function Feed({ setPage }) {
+  const { profile } = useAuth()
+  const me = profile?.username || 'Angel'
+  const myId = me.toLowerCase()
   const { posts, loading, createPost, deletePost } = usePosts()
   const [titleOp, setTitleOp] = useState(0)
   const [toolbarOp, setToolbarOp] = useState(0)
@@ -26,8 +30,8 @@ export default function Feed({ setPage }) {
   const handlePost = () => {
     if (!caption.trim()) return
     createPost({
-      author_id: 'angel',
-      author_name: 'Angel',
+      author_id: myId,
+      author_name: me,
       caption: caption.trim(),
       image_url: null,
     })
@@ -62,7 +66,7 @@ export default function Feed({ setPage }) {
             transition: 'opacity 0.4s ease-out 0.2s',
           }}
         >
-          [ sedang dibangun — tanpa gambar & like dulu ]
+          cerita kecil kita berdua ✨
         </p>
 
         {/* Toolbar */}
@@ -150,7 +154,7 @@ export default function Feed({ setPage }) {
               <PostCard
                 post={post}
                 onDelete={handleDelete}
-                isOwner={true}
+                isOwner={post.author_id === myId}
               />
             </div>
           ))}
